@@ -3,5 +3,5 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="BSS论坛/BSS论坛.vcxproj" Id="7b0c1a52-3e4d-4c8f-9a61-2d5e8f1c4b73" />
+  <Project Path="BBS论坛/BSS论坛.vcxproj" Id="7b0c1a52-3e4d-4c8f-9a61-2d5e8f1c4b73" />
 </Solution>

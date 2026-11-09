@@ -584,7 +584,7 @@ HttpResponse ApiRouter::dispatch(const HttpRequest& request) {
     } catch (const AppError& error) {
         return failure(error.status(), error.code(), error.message());
     } catch (const DbError& error) {
-        logger_.error(std::string("数据库错误: ") + error.what());
+        logger_.error("数据库错误: code=" + std::to_string(error.code()) + " " + error.what());
         if (error.unavailable()) {
             return failure(503, "DATABASE_UNAVAILABLE", "数据库暂时不可用");
         }

@@ -17,7 +17,7 @@ public:
     std::vector<PostRecord> search(DbContext& cx, const PostQuery& query);
 
     Id insert(DbContext& cx, const PostInsert& data);
-    RowCount updateOwn(DbContext& cx, Id postId, Id expectedAuthorId,
+    RowCount updateOwn(DbContext& cx, Id postId, std::optional<Id> expectedAuthorId,
                        const Text& title, const Text& content, const Time& at);
     // expectedAuthorId 为空表示管理者移除；仅作用于可见帖子
     RowCount markDeleted(DbContext& cx, Id postId, std::optional<Id> expectedAuthorId,

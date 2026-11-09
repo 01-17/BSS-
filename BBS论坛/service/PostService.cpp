@@ -64,8 +64,13 @@ PostDetail PostService::editOwnPost(DbContext& cx, const SessionContext& session
     if (!record) {
         throw errors::notFound("帖子不存在或已删除");
     }
-    permissions_.requireOwner(current.userId, record->authorId);
-    if (posts_.updateOwn(cx, postId, current.userId, title, content, util::nowUtc()) == 0) {
+    // 作者本人可编辑；管理员可编辑任意用户的帖子；其他用户（含版主对他人帖子）一律拒绝
+    std::optional<Id> expectedAuthor;
+    if (!current.isAdmin()) {
+        permissions_.requireOwner(current.userId, record->authorId);
+        expectedAuthor = current.userId;
+    }
+    if (posts_.updateOwn(cx, postId, expectedAuthor, title, content, util::nowUtc()) == 0) {
         throw errors::notFound("帖子不存在或已删除");
     }
     transaction.commit();
