@@ -7,6 +7,8 @@
 --   bob07       / BobDemo2026!       普通用户，正常
 --   disabled07  / DisabledDemo2026!  普通用户，停用
 
+BEGIN IMMEDIATE;
+
 INSERT OR IGNORE INTO roles(role_id, role_code, role_name) VALUES
     (1, 'member', '普通用户'),
     (2, 'admin',  '管理员');
@@ -43,8 +45,13 @@ INSERT OR IGNORE INTO boards(board_id, name, description, status, created_at, up
     (3, '站务公告', '论坛规则与历史公告', 0,
      '2026-11-01 09:10:00', '2026-11-04 18:00:00');
 
-INSERT OR IGNORE INTO board_moderators(user_id, board_id, assigned_at) VALUES
-    (2, 2, '2026-11-01 09:30:00');
+-- 仅为全新演示数据创建初始授权；若该组合曾获授权并被撤销，重启不得恢复。
+INSERT OR IGNORE INTO board_moderators(user_id, board_id, assigned_at)
+SELECT 2, 2, '2026-11-01 09:30:00'
+WHERE NOT EXISTS (
+    SELECT 1 FROM moderation_logs
+    WHERE action = 'moderator_grant' AND target_user_id = 2 AND target_board_id = 2
+);
 
 INSERT OR IGNORE INTO posts(post_id, board_id, author_id, title, content, status,
                             is_pinned, is_featured, created_at, updated_at) VALUES
@@ -89,3 +96,5 @@ INSERT OR IGNORE INTO moderation_logs(log_id, actor_id, action, target_user_id,
     (6, 1, 'user_disable', 5, NULL, NULL, NULL, NULL, '2026-11-04 18:05:00'),
     (7, 2, 'post_remove', NULL, NULL, 5, NULL,
      '重复灌水，与版块主题无关。', '2026-11-04 16:00:00');
+
+COMMIT;
