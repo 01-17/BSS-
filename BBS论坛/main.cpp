@@ -1,6 +1,14 @@
 // BBS 论坛服务端入口：读配置 → 初始化日志与数据库 → 装配各层 → 启动 HTTP 服务
 #include "http/HttpServer.h"
 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+
 #include <atomic>
 #include <csignal>
 #include <filesystem>
@@ -59,12 +67,63 @@ void ensureParentDirectory(const std::string& filePath) {
     }
 }
 
+std::filesystem::path executableDirectory() {
+    std::string buffer(MAX_PATH, '\0');
+    const DWORD length = GetModuleFileNameA(nullptr, buffer.data(),
+                                            static_cast<DWORD>(buffer.size()));
+    if (length == 0 || length >= buffer.size()) return {};
+    return std::filesystem::path(buffer.substr(0, length)).parent_path();
+}
+
+// 控制台默认使用系统代码页（中文为 936/GBK），而本程序输出的中文字面量是 UTF-8，
+// 不切换会显示为乱码。重定向到文件时该调用失败，无副作用。
+void enableUtf8Console() {
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+}
+
+std::string toUtf8(const std::filesystem::path& path) {
+    const std::string text = path.u8string();
+    return text;
+}
+
+// 依次在“当前工作目录、exe 所在目录及其上两级”查找 config.ini。
+// 找到后把工作目录切到该目录，使 config.ini、sql/*.sql、data 等相对路径
+// 在双击 out\Debug\BBS论坛.exe 这类场景下同样可用。
+bool locateRootDirectory() {
+    std::error_code error;
+    if (std::filesystem::exists("config.ini", error)) {
+        std::cout << "工作目录: " << toUtf8(std::filesystem::current_path()) << std::endl;
+        return true;
+    }
+
+    std::filesystem::path directory = executableDirectory();
+    for (int depth = 0; depth < 4 && !directory.empty(); ++depth) {
+        if (std::filesystem::exists(directory / "config.ini", error)) {
+            std::filesystem::current_path(directory, error);
+            if (error) return false;
+            std::cout << "工作目录: " << toUtf8(directory) << std::endl;
+            return true;
+        }
+        directory = directory.parent_path();
+    }
+    return false;
+}
+
 } // namespace
 
 int main() {
+    enableUtf8Console();
+
+    if (!locateRootDirectory()) {
+        std::cerr << "无法定位 config.ini，请把本程序放在服务端根目录下，"
+                     "或在服务端根目录执行 BBS论坛.exe" << std::endl;
+        return 1;
+    }
+
     Config config;
     if (!config.load("config.ini")) {
-        std::cerr << "无法读取 config.ini，请确认工作目录为服务端根目录" << std::endl;
+        std::cerr << "无法读取 config.ini，请检查文件编码与格式" << std::endl;
         return 1;
     }
 
