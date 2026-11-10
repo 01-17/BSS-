@@ -88,16 +88,14 @@ Id PostRepository::insert(DbContext& cx, const PostInsert& data) {
     return stmt.lastInsertId();
 }
 
-RowCount PostRepository::updateOwn(DbContext& cx, Id postId,
-                                   std::optional<Id> expectedAuthorId,
+RowCount PostRepository::updateOwn(DbContext& cx, Id postId, Id authorId,
                                    const Text& title, const Text& content, const Time& at) {
-    std::string sql =
+    // 数据访问层再次以作者 ID 限制更新范围，避免上层误用造成越权。
+    Statement stmt = cx.prepare(
         "UPDATE posts SET title = ?, content = ?, updated_at = MAX(updated_at, ?) "
-        "WHERE post_id = ? AND status = 1";
-    if (expectedAuthorId) sql += " AND author_id = ?";
-    Statement stmt = cx.prepare(sql);
-    stmt.bind(1, title).bind(2, content).bind(3, at).bind(4, postId);
-    if (expectedAuthorId) stmt.bind(5, *expectedAuthorId);
+        "WHERE post_id = ? AND status = 1 AND author_id = ?");
+    stmt.bind(1, title).bind(2, content).bind(3, at).bind(4, postId)
+        .bind(5, authorId);
     stmt.exec();
     return stmt.changes();
 }
