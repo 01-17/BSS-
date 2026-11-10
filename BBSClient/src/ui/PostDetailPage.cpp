@@ -210,12 +210,10 @@ void PostDetailPage::render(const PostDetail& detail)
 
     const bool loggedIn = m_context.session && m_context.session->isLoggedIn();
     const bool isOwner = loggedIn && m_context.session->userId() == detail.author.userId;
-    // 管理员可编辑任意用户的帖子（与服务端 PUT /posts/{id} 放行管理员一致）
-    const bool canEdit = isOwner || (loggedIn && m_context.session->isAdmin());
     const bool canModerate = loggedIn && m_context.session->canModerate(detail.boardId);
     const bool visible = detail.status == 1;
 
-    m_editButton->setVisible(canEdit && visible);
+    m_editButton->setVisible(isOwner && visible);
     m_deleteButton->setVisible(isOwner && visible);
     m_moderateButton->setVisible(canModerate);
     m_pinButton->setVisible(canModerate);

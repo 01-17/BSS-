@@ -361,3 +361,13 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# BBS course project: local database and Qt generated build artifacts
+/BBS论坛/data/
+/BBS论坛/logs/
+/BBSClient/.qmake.stash
+/BBSClient/.qmake.cache
+/BBSClient/Makefile
+/BBSClient/build/
+/BBSClient/CMakeFiles/
+/BBSClient/CMakeCache.txt
